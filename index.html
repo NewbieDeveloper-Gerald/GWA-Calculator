@@ -3,108 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="General Weighted Average (GWA) Calculator — Add subjects with grades and credit units to compute your GWA instantly.">
-  <title>GWA Calculator — General Weighted Average</title>
+  <meta name="description" content="GWA Calculator for Pambayang Dalubhasaan ng Marilao — Add subjects with grades and credit units to compute your General Weighted Average and check academic honors eligibility.">
+  <title>GWA Calculator — Pambayang Dalubhasaan ng Marilao</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <main>
-    <div class="card">
+    <div class="container">
 
-      <!-- Header -->
-      <header class="app-header">
-        <h1>GWA Calculator</h1>
-        <p class="tagline">Add your subjects, grades &amp; units — get your General Weighted Average instantly.</p>
+      <!-- Top Badge -->
+      <div class="badge-wrap">
+        <span class="badge">
+          <img src="images/pdmLogo.png" alt="PDM Logo">
+          GWA Calculator
+        </span>
+      </div>
+
+      <!-- Hero Header -->
+      <header class="hero">
+        <h1>Calculate Your<br><span class="hero-accent">General Weighted Average</span></h1>
+        <p class="hero-sub">Enter your subjects with grades &amp; credit units to compute your <strong>GWA</strong> and check your academic honors eligibility.</p>
       </header>
 
-      <!-- Subject Entry Form -->
-      <section class="entry-section" aria-label="Add a subject">
-        <form id="subject-form" autocomplete="off" novalidate>
+      <!-- GWA Result Banner -->
+      <section class="gwa-banner" id="gwa-banner" aria-label="GWA result">
+        <div class="gwa-banner-left">
+          <span class="gwa-banner-label">Your GWA</span>
+          <span class="gwa-banner-value is-empty" id="gwa-display">&mdash;</span>
+          <span class="gwa-banner-status" id="gwa-status">Add subjects below</span>
+        </div>
+        <div class="gwa-banner-right">
+          <span class="gwa-banner-label">Total Units</span>
+          <span class="gwa-banner-units" id="total-units">0</span>
+          <span class="gwa-banner-sub" id="subject-count">no subjects</span>
+        </div>
+      </section>
+
+      <!-- School Info Card -->
+      <section class="school-card" aria-label="School information">
+        <img src="images/pdmLogo.png" alt="PDM Logo" class="school-logo">
+        <div class="school-info">
+          <h2>Pambayang Dalubhasaan ng Marilao</h2>
+          <p>Grading scale &amp; honors criteria based on official PDM academic standards</p>
+        </div>
+      </section>
+
+      <!-- Honors Cards Row -->
+      <section class="honors-row" aria-label="Academic honors qualifications">
+        <div class="honor-card honor-summa" id="honor-summa">
+          <div class="honor-range">1.00 – 1.25</div>
+          <div class="honor-title">Summa Cum Laude</div>
+          <div class="honor-desc">No grade lower than 1.75</div>
+        </div>
+        <div class="honor-card honor-magna" id="honor-magna">
+          <div class="honor-range">1.26 – 1.50</div>
+          <div class="honor-title">Magna Cum Laude</div>
+          <div class="honor-desc">No grade lower than 2.00</div>
+        </div>
+        <div class="honor-card honor-cum" id="honor-cum">
+          <div class="honor-range">1.51 – 1.75</div>
+          <div class="honor-title">Cum Laude</div>
+          <div class="honor-desc">No grade lower than 2.25</div>
+        </div>
+      </section>
+
+      <!-- Stats Cards -->
+      <section class="stats-row" aria-label="Quick stats">
+        <div class="stat-card">
+          <span class="stat-label">Best Grade</span>
+          <span class="stat-value" id="stat-best">&mdash;</span>
+          <span class="stat-sub" id="stat-best-name">N/A</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Needs Work</span>
+          <span class="stat-value" id="stat-worst">&mdash;</span>
+          <span class="stat-sub" id="stat-worst-name">N/A</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Subjects</span>
+          <span class="stat-value" id="stat-count">0</span>
+          <span class="stat-sub">total entered</span>
+        </div>
+      </section>
+
+      <!-- Formula Banner -->
+      <div class="formula-banner">
+        <span class="formula-tag">FORMULA</span>
+        <span class="formula-text">GWA = Σ (Grade × Units) ÷ Σ Units</span>
+      </div>
+
+      <!-- Subjects Section -->
+      <section class="subjects-section" aria-label="Your subjects">
+        <div class="subjects-header">
+          <h2 class="subjects-title">Your Subjects</h2>
+        </div>
+
+        <!-- Table Header -->
+        <div class="table-head">
+          <span class="th-name">Subject</span>
+          <span class="th-units">Units</span>
+          <span class="th-grade">Grade</span>
+          <span class="th-action"></span>
+        </div>
+
+        <!-- Table Body -->
+        <div class="table-body" id="table-body">
+          <!-- Dynamic rows inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state is-visible" id="empty-state">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <rect x="6" y="10" width="36" height="28" rx="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M6 18h36" stroke="currentColor" stroke-width="2"/>
+            <circle cx="24" cy="30" r="3" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <p>No subjects added yet.<br><span>Use the button below to get started.</span></p>
+        </div>
+
+        <!-- Subject Entry Form -->
+        <form id="subject-form" class="entry-form" autocomplete="off" novalidate>
           <div class="form-row">
             <div class="input-group input-group--name">
               <label for="input-name">Subject Name</label>
-              <input type="text" id="input-name" placeholder="e.g. Mathematics" required>
-            </div>
-            <div class="input-group input-group--grade">
-              <label for="input-grade">Grade</label>
-              <input type="number" id="input-grade" placeholder="1.00" step="0.01" min="1" max="5" required>
+              <input type="text" id="input-name" placeholder="e.g. Mathematics">
             </div>
             <div class="input-group input-group--units">
               <label for="input-units">Units</label>
-              <input type="number" id="input-units" placeholder="3" step="1" min="1" max="12" required>
+              <input type="number" id="input-units" placeholder="3" step="1" min="1" max="12">
             </div>
-            <button type="submit" id="btn-add" class="btn btn-primary">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M9 3v12M3 9h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Add Subject
-            </button>
+            <div class="input-group input-group--grade">
+              <label for="input-grade">Grade</label>
+              <input type="number" id="input-grade" placeholder="1.75" step="0.25" min="1" max="5">
+            </div>
           </div>
         </form>
-      </section>
 
-
-      <!-- Subjects Table -->
-      <section class="table-section" aria-label="Subject list">
-        <div class="table-wrap is-empty" id="table-wrap">
-          <table id="subjects-table">
-            <thead>
-              <tr>
-                <th class="col-name">Subject</th>
-                <th class="col-grade">Grade</th>
-                <th class="col-units">Units</th>
-                <th class="col-action"><span class="sr-only">Action</span></th>
-              </tr>
-            </thead>
-            <tbody id="table-body">
-              <!-- Dynamic rows inserted here -->
-            </tbody>
-          </table>
-          <!-- Empty State -->
-          <div class="empty-state is-visible" id="empty-state">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-              <rect x="6" y="10" width="36" height="28" rx="4" stroke="currentColor" stroke-width="2"/>
-              <path d="M6 18h36" stroke="currentColor" stroke-width="2"/>
-              <circle cx="24" cy="30" r="3" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            <p>No subjects added yet.<br><span>Use the form above to get started.</span></p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Results Bar -->
-      <section class="results-bar" aria-label="GWA result" id="results-bar">
-        <div>
-          <div class="results-label">General Weighted Average</div>
-          <div class="results-sublabel" id="results-summary">Add subjects and click calculate</div>
-        </div>
-        <div class="results-right">
-          <div class="results-value is-empty" id="gwa-display">&mdash;</div>
-          <button type="button" id="btn-calculate" class="btn btn-accent" disabled>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 8h8M8 4v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="1.5" y="1.5" width="13" height="13" rx="3" stroke="currentColor" stroke-width="1.4"/></svg>
-            Calculate GWA
+        <!-- Action Buttons -->
+        <div class="subjects-actions">
+          <button type="button" id="btn-add" class="btn btn-dark">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add Subject
           </button>
-        </div>
-      </section>
-
-      <!-- Action Buttons -->
-      <section class="actions" aria-label="Actions">
-        <button type="button" id="btn-clear" class="btn btn-outline" disabled>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.334H4.667a1.333 1.333 0 0 1-1.334-1.334V4h9.334Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Clear All
-        </button>
-
-        <div class="tooltip-wrap">
-          <button type="button" class="btn-tooltip" aria-describedby="tooltip-formula">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M7 6.25v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="7" cy="4.25" r="0.75" fill="currentColor"/></svg>
-            How it works
+          <button type="button" id="btn-clear" class="btn btn-outline" disabled>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1.75 3.5h10.5M5.25 3.5V2.333a1.167 1.167 0 0 1 1.167-1.166h1.166a1.167 1.167 0 0 1 1.167 1.166V3.5m1.75 0v8.167a1.167 1.167 0 0 1-1.167 1.166H4.667A1.167 1.167 0 0 1 3.5 11.667V3.5h7Z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reset All
           </button>
-          <div class="tooltip-content" id="tooltip-formula" role="tooltip">
-            The General Weighted Average is calculated by:
-            <code>GWA = Σ(Grade × Units) / Σ(Units)</code>
-          </div>
         </div>
       </section>
 
@@ -112,7 +160,7 @@
   </main>
 
   <footer>
-    <p>&copy; 2026 GWA Calculator</p>
+    <p>&copy; 2026 Pambayang Dalubhasaan ng Marilao &nbsp;·&nbsp; <span class="footer-note">Lower grade = Better (1.00 is perfect)</span></p>
   </footer>
 
   <script src="script.js"></script>

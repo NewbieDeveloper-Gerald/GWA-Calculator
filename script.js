@@ -1,28 +1,47 @@
 /* ============================================================
-   GWA Calculator — Application Logic
+   GWA Calculator — Pambayang Dalubhasaan ng Marilao
+   Auto-calculating · Honors detection · Inline editing
    ============================================================ */
 
 (function () {
   'use strict';
 
   // ---- Storage key ----
-  const STORAGE_KEY = 'gwa-subjects';
+  var STORAGE_KEY = 'gwa-subjects';
+
+  // ---- Defaults ----
+  var DEFAULT_GRADE = 1.75;
+  var DEFAULT_UNITS = 3;
+  var subjectCounter = 0;
 
   // ---- State ----
-  let subjects = [];
+  var subjects = [];
 
   // ---- DOM References ----
-  const form         = document.getElementById('subject-form');
-  const inputName    = document.getElementById('input-name');
-  const inputGrade   = document.getElementById('input-grade');
-  const inputUnits   = document.getElementById('input-units');
-  const tableBody    = document.getElementById('table-body');
-  const tableWrap    = document.getElementById('table-wrap');
-  const emptyState   = document.getElementById('empty-state');
-  const gwaDisplay     = document.getElementById('gwa-display');
-  const resultsSummary = document.getElementById('results-summary');
-  const btnClear       = document.getElementById('btn-clear');
-  const btnCalculate   = document.getElementById('btn-calculate');
+  var form           = document.getElementById('subject-form');
+  var inputName      = document.getElementById('input-name');
+  var inputGrade     = document.getElementById('input-grade');
+  var inputUnits     = document.getElementById('input-units');
+  var tableBody      = document.getElementById('table-body');
+  var emptyState     = document.getElementById('empty-state');
+  var gwaDisplay     = document.getElementById('gwa-display');
+  var gwaStatus      = document.getElementById('gwa-status');
+  var totalUnitsEl   = document.getElementById('total-units');
+  var subjectCountEl = document.getElementById('subject-count');
+  var btnAdd         = document.getElementById('btn-add');
+  var btnClear       = document.getElementById('btn-clear');
+
+  // Stats
+  var statBest       = document.getElementById('stat-best');
+  var statBestName   = document.getElementById('stat-best-name');
+  var statWorst      = document.getElementById('stat-worst');
+  var statWorstName  = document.getElementById('stat-worst-name');
+  var statCount      = document.getElementById('stat-count');
+
+  // Honors cards
+  var honorSumma     = document.getElementById('honor-summa');
+  var honorMagna     = document.getElementById('honor-magna');
+  var honorCum       = document.getElementById('honor-cum');
 
   // ============================================================
   //  Initialization
@@ -30,13 +49,18 @@
 
   function init() {
     loadFromStorage();
-    renderTable();
+    subjectCounter = subjects.length;
+    renderAll();
 
     // Event listeners
-    form.addEventListener('submit', handleFormSubmit);
+    btnAdd.addEventListener('click', addSubject);
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      addSubject();
+    });
     tableBody.addEventListener('click', handleTableClick);
+    tableBody.addEventListener('change', handleInlineEdit);
     btnClear.addEventListener('click', clearAll);
-    btnCalculate.addEventListener('click', handleCalculate);
 
     // Remove invalid class on input interaction
     [inputName, inputGrade, inputUnits].forEach(function (input) {
@@ -50,50 +74,42 @@
   }
 
   // ============================================================
-  //  Form Handling
+  //  Add Subject
   // ============================================================
 
-  function handleFormSubmit(e) {
-    e.preventDefault();
-    addSubject();
-  }
-
   function addSubject() {
-    var name  = inputName.value.trim();
-    var grade = parseFloat(inputGrade.value);
-    var units = parseInt(inputUnits.value, 10);
+    var rawName  = inputName.value.trim();
+    var rawGrade = inputGrade.value.trim();
+    var rawUnits = inputUnits.value.trim();
 
-    if (!validateInputs(name, grade, units)) {
+    // Apply defaults for empty fields
+    var name  = rawName || ('Subject ' + (++subjectCounter));
+    var grade = rawGrade !== '' ? parseFloat(rawGrade) : DEFAULT_GRADE;
+    var units = rawUnits !== '' ? parseInt(rawUnits, 10) : DEFAULT_UNITS;
+
+    if (!validateInputs(grade, units)) {
       return;
     }
 
     subjects.push({ name: name, grade: grade, units: units });
     saveToStorage();
-    renderTable(true); // pass true to animate the new row
+    renderAll(true);
     clearInputs();
     inputName.focus();
   }
 
   // ============================================================
-  //  Validation
+  //  Validation (only rejects out-of-range)
   // ============================================================
 
-  function validateInputs(name, grade, units) {
+  function validateInputs(grade, units) {
     var isValid = true;
 
-    // Subject name
-    if (!name || name.length === 0) {
-      markInvalid(inputName);
-      isValid = false;
-    }
-
-    // Grade: must be a number between 1.00 and 5.00
     if (isNaN(grade) || grade < 1 || grade > 5) {
       markInvalid(inputGrade);
       isValid = false;
     }
 
-    // Units: must be a positive integer between 1 and 12
     if (isNaN(units) || units < 1 || units > 12 || !Number.isInteger(units)) {
       markInvalid(inputUnits);
       isValid = false;
@@ -103,9 +119,7 @@
   }
 
   function markInvalid(input) {
-    // Remove and re-add to retrigger animation
     input.classList.remove('input-invalid');
-    // Force reflow
     void input.offsetWidth;
     input.classList.add('input-invalid');
   }
@@ -127,7 +141,57 @@
   function removeSubject(index) {
     subjects.splice(index, 1);
     saveToStorage();
-    renderTable();
+    renderAll();
+  }
+
+  // ============================================================
+  //  Inline Editing
+  // ============================================================
+
+  function handleInlineEdit(e) {
+    var input = e.target;
+    var field = input.getAttribute('data-field');
+    var index = parseInt(input.getAttribute('data-index'), 10);
+
+    if (!field || isNaN(index) || index < 0 || index >= subjects.length) return;
+
+    var subject = subjects[index];
+
+    if (field === 'name') {
+      var newName = input.value.trim();
+      if (newName.length === 0) {
+        input.value = subject.name;
+        markInvalid(input);
+        return;
+      }
+      subject.name = newName;
+    } else if (field === 'grade') {
+      var newGrade = parseFloat(input.value);
+      if (isNaN(newGrade) || newGrade < 1 || newGrade > 5) {
+        input.value = subject.grade.toFixed(2);
+        markInvalid(input);
+        return;
+      }
+      subject.grade = newGrade;
+      input.value = newGrade.toFixed(2);
+    } else if (field === 'units') {
+      var newUnits = parseInt(input.value, 10);
+      if (isNaN(newUnits) || newUnits < 1 || newUnits > 12 || !Number.isInteger(newUnits)) {
+        input.value = subject.units;
+        markInvalid(input);
+        return;
+      }
+      subject.units = newUnits;
+    }
+
+    input.classList.remove('input-invalid');
+    saveToStorage();
+
+    // Re-render stats, banner, honors (but not the table to keep focus)
+    updateGWADisplay();
+    renderStats();
+    renderBannerMeta();
+    updateHonors();
   }
 
   function clearAll() {
@@ -138,7 +202,7 @@
 
     subjects = [];
     saveToStorage();
-    renderTable();
+    renderAll();
     inputName.focus();
   }
 
@@ -158,7 +222,6 @@
     }
 
     if (totalUnits === 0) return null;
-
     return totalWeighted / totalUnits;
   }
 
@@ -170,60 +233,157 @@
     return total;
   }
 
+  function getHighestGrade() {
+    // Highest (worst) numeric grade
+    if (subjects.length === 0) return null;
+    var worst = subjects[0];
+    for (var i = 1; i < subjects.length; i++) {
+      if (subjects[i].grade > worst.grade) worst = subjects[i];
+    }
+    return worst;
+  }
+
+  function getBestGrade() {
+    if (subjects.length === 0) return null;
+    var best = subjects[0];
+    for (var i = 1; i < subjects.length; i++) {
+      if (subjects[i].grade < best.grade) best = subjects[i];
+    }
+    return best;
+  }
+
+  function getWorstGrade() {
+    return getHighestGrade();
+  }
+
+  // ============================================================
+  //  Academic Honors Detection
+  // ============================================================
+
+  function determineHonors() {
+    if (subjects.length === 0) return null;
+
+    var gwa = calculateGWA();
+    if (gwa === null) return null;
+
+    var highestGrade = getHighestGrade();
+    var maxGrade = highestGrade ? highestGrade.grade : 5;
+
+    // Summa Cum Laude: GWA 1.00–1.25, no grade lower than 1.75
+    if (gwa >= 1.00 && gwa <= 1.25 && maxGrade <= 1.75) {
+      return 'summa';
+    }
+    // Magna Cum Laude: GWA 1.26–1.50, no grade lower than 2.00
+    if (gwa >= 1.00 && gwa <= 1.50 && maxGrade <= 2.00) {
+      return 'magna';
+    }
+    // Cum Laude: GWA 1.51–1.75, no grade lower than 2.25
+    if (gwa >= 1.00 && gwa <= 1.75 && maxGrade <= 2.25) {
+      return 'cum';
+    }
+
+    return null;
+  }
+
+  function updateHonors() {
+    var honor = determineHonors();
+
+    // Clear all
+    honorSumma.classList.remove('is-active');
+    honorMagna.classList.remove('is-active');
+    honorCum.classList.remove('is-active');
+
+    if (honor === 'summa') {
+      honorSumma.classList.add('is-active');
+    } else if (honor === 'magna') {
+      honorMagna.classList.add('is-active');
+    } else if (honor === 'cum') {
+      honorCum.classList.add('is-active');
+    }
+  }
+
+  function getHonorLabel(honor) {
+    if (honor === 'summa') return 'Summa Cum Laude';
+    if (honor === 'magna') return 'Magna Cum Laude';
+    if (honor === 'cum')   return 'Cum Laude';
+    return null;
+  }
+
   // ============================================================
   //  Rendering
   // ============================================================
 
+  function renderAll(animateLastRow) {
+    renderTable(animateLastRow);
+    updateGWADisplay();
+    renderStats();
+    renderBannerMeta();
+    updateHonors();
+
+    var isEmpty = subjects.length === 0;
+    btnClear.disabled = isEmpty;
+  }
+
   function renderTable(animateLastRow) {
-    // Clear existing rows
     tableBody.innerHTML = '';
 
     var isEmpty = subjects.length === 0;
 
-    // Toggle empty state
     if (isEmpty) {
       emptyState.classList.add('is-visible');
-      tableWrap.classList.add('is-empty');
     } else {
       emptyState.classList.remove('is-visible');
-      tableWrap.classList.remove('is-empty');
     }
 
-    // Build rows
     for (var i = 0; i < subjects.length; i++) {
       var subject = subjects[i];
-      var tr = document.createElement('tr');
+      var row = document.createElement('div');
+      row.className = 'subject-row';
+      row.setAttribute('data-index', i);
 
-      // Animate only the last (newly added) row
       if (animateLastRow && i === subjects.length - 1) {
-        tr.classList.add('row-new');
-        // Remove animation class after it completes
-        tr.addEventListener('animationend', function () {
+        row.classList.add('row-new');
+        row.addEventListener('animationend', function () {
           this.classList.remove('row-new');
         });
       }
 
-      // Subject name
-      var tdName = document.createElement('td');
-      tdName.className = 'cell-name';
-      var nameSpan = document.createElement('span');
-      nameSpan.className = 'subject-name';
-      nameSpan.textContent = subject.name;
-      tdName.appendChild(nameSpan);
+      // Editable name input
+      var nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.className = 'row-name';
+      nameInput.value = subject.name;
+      nameInput.setAttribute('data-index', i);
+      nameInput.setAttribute('data-field', 'name');
+      nameInput.setAttribute('aria-label', 'Subject name');
 
-      // Grade
-      var tdGrade = document.createElement('td');
-      tdGrade.className = 'cell-grade';
-      tdGrade.textContent = subject.grade.toFixed(2);
+      // Editable units input
+      var unitsInput = document.createElement('input');
+      unitsInput.type = 'number';
+      unitsInput.className = 'row-units';
+      unitsInput.value = subject.units;
+      unitsInput.setAttribute('data-index', i);
+      unitsInput.setAttribute('data-field', 'units');
+      unitsInput.setAttribute('aria-label', 'Units');
+      unitsInput.min = '1';
+      unitsInput.max = '12';
+      unitsInput.step = '1';
 
-      // Units
-      var tdUnits = document.createElement('td');
-      tdUnits.className = 'cell-units';
-      tdUnits.textContent = subject.units;
+      // Editable grade input
+      var gradeInput = document.createElement('input');
+      gradeInput.type = 'number';
+      gradeInput.className = 'row-grade';
+      gradeInput.value = subject.grade.toFixed(2);
+      gradeInput.setAttribute('data-index', i);
+      gradeInput.setAttribute('data-field', 'grade');
+      gradeInput.setAttribute('aria-label', 'Grade');
+      gradeInput.min = '1';
+      gradeInput.max = '5';
+      gradeInput.step = '0.25';
 
-      // Delete action
-      var tdAction = document.createElement('td');
-      tdAction.className = 'cell-action';
+      // Delete button
+      var actionEl = document.createElement('span');
+      actionEl.className = 'row-action';
 
       var deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
@@ -231,58 +391,90 @@
       deleteBtn.setAttribute('data-index', i);
       deleteBtn.setAttribute('aria-label', 'Delete ' + subject.name);
       deleteBtn.innerHTML =
-        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
-          '<path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.334H4.667a1.333 1.333 0 0 1-1.334-1.334V4h9.334Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">' +
+          '<path d="M1.75 3.5h10.5M5.25 3.5V2.333a1.167 1.167 0 0 1 1.167-1.166h1.166a1.167 1.167 0 0 1 1.167 1.166V3.5m1.75 0v8.167a1.167 1.167 0 0 1-1.167 1.166H4.667A1.167 1.167 0 0 1 3.5 11.667V3.5h7Z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>' +
         '</svg>';
-      tdAction.appendChild(deleteBtn);
+      actionEl.appendChild(deleteBtn);
 
-      tr.appendChild(tdName);
-      tr.appendChild(tdGrade);
-      tr.appendChild(tdUnits);
-      tr.appendChild(tdAction);
-      tableBody.appendChild(tr);
+      row.appendChild(nameInput);
+      row.appendChild(unitsInput);
+      row.appendChild(gradeInput);
+      row.appendChild(actionEl);
+      tableBody.appendChild(row);
     }
-
-    // Reset GWA display — user must click Calculate
-    resetGWADisplay();
-
-    // Toggle clear & calculate buttons
-    btnClear.disabled = isEmpty;
-    btnCalculate.disabled = isEmpty;
   }
 
-  function resetGWADisplay() {
-    if (subjects.length === 0) {
-      gwaDisplay.textContent = '\u2014'; // em dash
-      gwaDisplay.classList.add('is-empty');
-      gwaDisplay.classList.remove('just-calculated');
-      resultsSummary.textContent = 'Add subjects and click calculate';
-    } else {
+  function updateGWADisplay() {
+    var gwa = calculateGWA();
+    var honor = determineHonors();
+
+    if (gwa === null) {
       gwaDisplay.textContent = '\u2014';
       gwaDisplay.classList.add('is-empty');
       gwaDisplay.classList.remove('just-calculated');
-      resultsSummary.textContent =
-        subjects.length + ' subject' + (subjects.length !== 1 ? 's' : '') +
-        ' ready \u2014 click Calculate';
+      gwaStatus.textContent = 'Add subjects below';
+    } else {
+      var previousValue = gwaDisplay.textContent;
+      var newValue = gwa.toFixed(4);
+
+      gwaDisplay.textContent = newValue;
+      gwaDisplay.classList.remove('is-empty');
+
+      // Pop animation if value changed
+      if (previousValue !== newValue && previousValue !== '\u2014') {
+        gwaDisplay.classList.remove('just-calculated');
+        void gwaDisplay.offsetWidth;
+        gwaDisplay.classList.add('just-calculated');
+      } else if (previousValue === '\u2014') {
+        gwaDisplay.classList.remove('just-calculated');
+        void gwaDisplay.offsetWidth;
+        gwaDisplay.classList.add('just-calculated');
+      }
+
+      // Status text with honor
+      var honorLabel = getHonorLabel(honor);
+      if (honorLabel) {
+        gwaStatus.textContent = honorLabel + ' \u2014 With Honors';
+      } else {
+        gwaStatus.textContent = 'Calculated';
+      }
     }
   }
 
-  function handleCalculate() {
-    var gwa = calculateGWA();
-    if (gwa === null) return;
+  function renderStats() {
+    var best = getBestGrade();
+    var worst = getWorstGrade();
 
-    var totalUnits = getTotalUnits();
+    if (best) {
+      statBest.textContent = best.grade.toFixed(2);
+      statBestName.textContent = best.name;
+    } else {
+      statBest.textContent = '\u2014';
+      statBestName.textContent = 'N/A';
+    }
 
-    gwaDisplay.textContent = gwa.toFixed(4);
-    gwaDisplay.classList.remove('is-empty');
-    resultsSummary.textContent =
-      subjects.length + ' subject' + (subjects.length !== 1 ? 's' : '') +
-      ' \u00B7 ' + totalUnits + ' total unit' + (totalUnits !== 1 ? 's' : '');
+    if (worst) {
+      statWorst.textContent = worst.grade.toFixed(2);
+      statWorstName.textContent = worst.name;
+    } else {
+      statWorst.textContent = '\u2014';
+      statWorstName.textContent = 'N/A';
+    }
 
-    // Trigger pop animation
-    gwaDisplay.classList.remove('just-calculated');
-    void gwaDisplay.offsetWidth; // force reflow
-    gwaDisplay.classList.add('just-calculated');
+    statCount.textContent = subjects.length;
+  }
+
+  function renderBannerMeta() {
+    var total = getTotalUnits();
+    totalUnitsEl.textContent = total;
+
+    if (subjects.length === 0) {
+      subjectCountEl.textContent = 'no subjects';
+    } else {
+      subjectCountEl.textContent =
+        subjects.length + ' subject' + (subjects.length !== 1 ? 's' : '') +
+        ' \u00B7 ' + total + ' total units';
+    }
   }
 
   // ============================================================
@@ -303,7 +495,7 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(subjects));
     } catch (e) {
-      // Silently fail if storage is unavailable
+      // Silently fail
     }
   }
 
@@ -313,7 +505,6 @@
       if (stored) {
         var parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          // Validate each entry
           subjects = parsed.filter(function (item) {
             return (
               item &&
