@@ -320,6 +320,11 @@
     renderBannerMeta();
     updateHonors();
 
+    // Also update CGPA if semesters module is initialized
+    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
+      updateCGPA();
+    }
+
     var isEmpty = subjects.length === 0;
     btnClear.disabled = isEmpty;
   }
@@ -488,7 +493,265 @@
   }
 
   // ============================================================
-  //  LocalStorage Persistence
+  //  CGPA — Past Semester GPAs
+  // ============================================================
+
+  var SEMESTERS_KEY = 'gwa-semesters';
+  var semesters = []; // Array of { gpa: number, units: number }
+
+  // DOM references for CGPA
+  var semesterList    = document.getElementById('semester-list');
+  var btnAddSemester  = document.getElementById('btn-add-semester');
+  var cgpaDisplay     = document.getElementById('cgpa-display');
+  var cgpaHonor       = document.getElementById('cgpa-honor');
+  var cgpaMeta        = document.getElementById('cgpa-meta');
+  var cgpaPanel       = document.getElementById('cgpa-panel');
+
+  function initSemesters() {
+    loadSemesters();
+    renderSemesters();
+    updateCGPA();
+
+    btnAddSemester.addEventListener('click', addSemester);
+    semesterList.addEventListener('click', handleSemesterDelete);
+    semesterList.addEventListener('change', handleSemesterEdit);
+  }
+
+  function addSemester() {
+    semesters.push({ gpa: 1.50, units: 21 });
+    saveSemesters();
+    renderSemesters(true);
+    updateCGPA();
+  }
+
+  function removeSemester(index) {
+    semesters.splice(index, 1);
+    saveSemesters();
+    renderSemesters();
+    updateCGPA();
+  }
+
+  function handleSemesterDelete(e) {
+    var btn = e.target.closest('.sem-delete');
+    if (!btn) return;
+    var index = parseInt(btn.getAttribute('data-index'), 10);
+    if (isNaN(index) || index < 0 || index >= semesters.length) return;
+    removeSemester(index);
+  }
+
+  function handleSemesterEdit(e) {
+    var input = e.target;
+    if (!input.classList.contains('sem-input')) return;
+
+    var field = input.getAttribute('data-field');
+    var index = parseInt(input.getAttribute('data-index'), 10);
+    if (!field || isNaN(index) || index < 0 || index >= semesters.length) return;
+
+    var sem = semesters[index];
+
+    if (field === 'gpa') {
+      var newGpa = parseFloat(input.value);
+      if (isNaN(newGpa) || newGpa < 1 || newGpa > 5) {
+        input.value = sem.gpa.toFixed(2);
+        input.classList.remove('input-invalid');
+        void input.offsetWidth;
+        input.classList.add('input-invalid');
+        return;
+      }
+      sem.gpa = newGpa;
+      input.value = newGpa.toFixed(2);
+    } else if (field === 'units') {
+      var newUnits = parseInt(input.value, 10);
+      if (isNaN(newUnits) || newUnits < 1 || newUnits > 50) {
+        input.value = sem.units;
+        input.classList.remove('input-invalid');
+        void input.offsetWidth;
+        input.classList.add('input-invalid');
+        return;
+      }
+      sem.units = newUnits;
+    }
+
+    input.classList.remove('input-invalid');
+    saveSemesters();
+    updateCGPA();
+  }
+
+  function renderSemesters(animateLast) {
+    semesterList.innerHTML = '';
+
+    for (var i = 0; i < semesters.length; i++) {
+      var sem = semesters[i];
+      var row = document.createElement('div');
+      row.className = 'semester-row';
+
+      if (animateLast && i === semesters.length - 1) {
+        row.classList.add('row-new');
+        row.addEventListener('animationend', function () {
+          this.classList.remove('row-new');
+        });
+      }
+
+      // Label
+      var label = document.createElement('span');
+      label.className = 'sem-label';
+      label.textContent = 'Sem ' + (i + 1);
+
+      // GPA input
+      var gpaInput = document.createElement('input');
+      gpaInput.type = 'number';
+      gpaInput.className = 'sem-input';
+      gpaInput.value = sem.gpa.toFixed(2);
+      gpaInput.placeholder = 'GPA e.g. 1.50';
+      gpaInput.setAttribute('data-index', i);
+      gpaInput.setAttribute('data-field', 'gpa');
+      gpaInput.min = '1';
+      gpaInput.max = '5';
+      gpaInput.step = '0.01';
+
+      // Units input
+      var unitsInput = document.createElement('input');
+      unitsInput.type = 'number';
+      unitsInput.className = 'sem-input';
+      unitsInput.value = sem.units;
+      unitsInput.placeholder = 'Units e.g. 21';
+      unitsInput.setAttribute('data-index', i);
+      unitsInput.setAttribute('data-field', 'units');
+      unitsInput.min = '1';
+      unitsInput.max = '50';
+      unitsInput.step = '1';
+
+      // Delete button
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'sem-delete';
+      delBtn.setAttribute('data-index', i);
+      delBtn.setAttribute('aria-label', 'Delete semester ' + (i + 1));
+      delBtn.innerHTML = '&times;';
+
+      row.appendChild(label);
+      row.appendChild(gpaInput);
+      row.appendChild(unitsInput);
+      row.appendChild(delBtn);
+      semesterList.appendChild(row);
+    }
+  }
+
+  // CGPA = Σ(GPA × Units) / Σ(Units) across all semesters + current semester
+  function calculateCGPA() {
+    var totalWeighted = 0;
+    var totalUnits = 0;
+
+    // Include current semester (from subjects) if there are subjects
+    var currentGWA = calculateGWA();
+    var currentUnits = getTotalUnits();
+
+    if (currentGWA !== null && currentUnits > 0) {
+      totalWeighted += currentGWA * currentUnits;
+      totalUnits += currentUnits;
+    }
+
+    // Include past semesters
+    for (var i = 0; i < semesters.length; i++) {
+      totalWeighted += semesters[i].gpa * semesters[i].units;
+      totalUnits += semesters[i].units;
+    }
+
+    if (totalUnits === 0) return null;
+    return totalWeighted / totalUnits;
+  }
+
+  function determineCGPAHonors(cgpa, allGrades) {
+    if (cgpa === null) return null;
+
+    // Find highest (worst) grade across everything
+    var maxGrade = 0;
+    for (var i = 0; i < allGrades.length; i++) {
+      if (allGrades[i] > maxGrade) maxGrade = allGrades[i];
+    }
+
+    if (cgpa >= 1.00 && cgpa <= 1.25 && maxGrade <= 1.75) return 'summa';
+    if (cgpa >= 1.00 && cgpa <= 1.50 && maxGrade <= 2.00) return 'magna';
+    if (cgpa >= 1.00 && cgpa <= 1.75 && maxGrade <= 2.25) return 'cum';
+    return null;
+  }
+
+  function updateCGPA() {
+    var cgpa = calculateCGPA();
+    var totalSemCount = semesters.length + (subjects.length > 0 ? 1 : 0);
+
+    // Collect all individual grades for honor check
+    var allGrades = [];
+    for (var i = 0; i < subjects.length; i++) {
+      allGrades.push(subjects[i].grade);
+    }
+    // For past semesters, we use their GPA as a proxy
+    // (we don't have individual grades for past semesters)
+    for (var j = 0; j < semesters.length; j++) {
+      allGrades.push(semesters[j].gpa);
+    }
+
+    var honor = determineCGPAHonors(cgpa, allGrades);
+
+    if (cgpa === null) {
+      cgpaDisplay.textContent = '\u2014';
+      cgpaDisplay.classList.add('is-empty');
+      cgpaHonor.textContent = '';
+      cgpaMeta.textContent = 'Add semesters or subjects to see your Latin Honors standing';
+      cgpaPanel.classList.remove('has-value');
+    } else {
+      cgpaDisplay.textContent = cgpa.toFixed(4);
+      cgpaDisplay.classList.remove('is-empty');
+      cgpaPanel.classList.add('has-value');
+
+      var totalUnitsAll = getTotalUnits();
+      for (var k = 0; k < semesters.length; k++) {
+        totalUnitsAll += semesters[k].units;
+      }
+
+      if (honor) {
+        cgpaHonor.textContent = getHonorLabel(honor) + ' \u2014 With Honors';
+      } else {
+        cgpaHonor.textContent = '';
+      }
+
+      cgpaMeta.textContent = totalSemCount + ' semester' + (totalSemCount !== 1 ? 's' : '') +
+        ' \u00B7 ' + totalUnitsAll + ' total units';
+    }
+  }
+
+  function saveSemesters() {
+    try {
+      localStorage.setItem(SEMESTERS_KEY, JSON.stringify(semesters));
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
+  function loadSemesters() {
+    try {
+      var stored = localStorage.getItem(SEMESTERS_KEY);
+      if (stored) {
+        var parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          semesters = parsed.filter(function (item) {
+            return (
+              item &&
+              typeof item.gpa === 'number' &&
+              typeof item.units === 'number' &&
+              item.gpa >= 1 && item.gpa <= 5 &&
+              item.units >= 1 && item.units <= 50
+            );
+          });
+        }
+      }
+    } catch (e) {
+      semesters = [];
+    }
+  }
+
+  // ============================================================
+  //  LocalStorage Persistence (subjects)
   // ============================================================
 
   function saveToStorage() {
@@ -528,5 +791,9 @@
   //  Boot
   // ============================================================
 
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', function () {
+    init();
+    initSemesters();
+  });
 })();
+
