@@ -192,6 +192,11 @@
     renderStats();
     renderBannerMeta();
     updateHonors();
+
+    // Also update CGPA
+    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
+      updateCGPA();
+    }
   }
 
   function clearAll() {
@@ -411,7 +416,6 @@
 
   function updateGWADisplay() {
     var gwa = calculateGWA();
-    var honor = determineHonors();
 
     if (gwa === null) {
       gwaDisplay.textContent = '\u2014';
@@ -437,6 +441,7 @@
       }
 
       // Status text with honor
+      var honor = determineHonors();
       var honorLabel = getHonorLabel(honor);
       if (honorLabel) {
         gwaStatus.textContent = honorLabel + ' \u2014 With Honors';
@@ -500,12 +505,13 @@
   var semesters = []; // Array of { gpa: number, units: number }
 
   // DOM references for CGPA
-  var semesterList    = document.getElementById('semester-list');
-  var btnAddSemester  = document.getElementById('btn-add-semester');
-  var cgpaDisplay     = document.getElementById('cgpa-display');
-  var cgpaHonor       = document.getElementById('cgpa-honor');
-  var cgpaMeta        = document.getElementById('cgpa-meta');
-  var cgpaPanel       = document.getElementById('cgpa-panel');
+  var semesterList      = document.getElementById('semester-list');
+  var btnAddSemester    = document.getElementById('btn-add-semester');
+  var btnClearSemesters = document.getElementById('btn-clear-semesters');
+  var cgpaDisplay       = document.getElementById('cgpa-display');
+  var cgpaHonor         = document.getElementById('cgpa-honor');
+  var cgpaMeta          = document.getElementById('cgpa-meta');
+  var cgpaPanel         = document.getElementById('cgpa-panel');
 
   function initSemesters() {
     loadSemesters();
@@ -513,11 +519,30 @@
     updateCGPA();
 
     btnAddSemester.addEventListener('click', addSemester);
+    if (btnClearSemesters) {
+      btnClearSemesters.addEventListener('click', clearSemesters);
+    }
     semesterList.addEventListener('click', handleSemesterDelete);
     semesterList.addEventListener('change', handleSemesterEdit);
   }
 
+  function clearSemesters() {
+    if (semesters.length === 0) return;
+    
+    var confirmed = confirm('Clear all past semesters? This cannot be undone.');
+    if (!confirmed) return;
+    
+    semesters = [];
+    saveSemesters();
+    renderSemesters();
+    updateCGPA();
+  }
+
   function addSemester() {
+    if (semesters.length >= 8) {
+      alert("You can only add up to 8 semesters.");
+      return;
+    }
     semesters.push({ gpa: 1.50, units: 21 });
     saveSemesters();
     renderSemesters(true);
@@ -579,6 +604,13 @@
 
   function renderSemesters(animateLast) {
     semesterList.innerHTML = '';
+    
+    if (btnClearSemesters) {
+      btnClearSemesters.disabled = (semesters.length === 0);
+    }
+    if (btnAddSemester) {
+      btnAddSemester.disabled = (semesters.length >= 8);
+    }
 
     for (var i = 0; i < semesters.length; i++) {
       var sem = semesters[i];
@@ -686,7 +718,6 @@
       allGrades.push(subjects[i].grade);
     }
     // For past semesters, we use their GPA as a proxy
-    // (we don't have individual grades for past semesters)
     for (var j = 0; j < semesters.length; j++) {
       allGrades.push(semesters[j].gpa);
     }

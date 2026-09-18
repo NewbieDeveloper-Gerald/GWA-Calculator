@@ -167,7 +167,7 @@ main {
 /* ===== GWA RESULT BANNER (dark) ===== */
 .gwa-banner {
   display: flex;
-  justify-content: space-between;
+  justify-content:space-between;
   align-items: flex-start;
   background: var(--dark-bg);
   border-radius: var(--radius-lg);
@@ -326,6 +326,7 @@ main {
   outline: 2.5px solid var(--accent-500);
   outline-offset: -1px;
 }
+
 
 /* ===== STATS CARDS ROW ===== */
 .stats-row {
