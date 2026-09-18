@@ -193,6 +193,10 @@
     renderBannerMeta();
     updateHonors();
 
+    // Also update CGPA
+    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
+      updateCGPA();
+    }
   }
 
   function clearAll() {
@@ -305,6 +309,11 @@
     renderStats();
     renderBannerMeta();
     updateHonors();
+
+    // Also update CGPA if semesters module is initialized
+    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
+      updateCGPA();
+    }
 
     var isEmpty = subjects.length === 0;
     btnClear.disabled = isEmpty;
@@ -716,13 +725,13 @@
     honorMagna.classList.remove('is-active');
     honorCum.classList.remove('is-active');
 
-    // if (honor === 'summa') {
-    //   honorSumma.classList.add('is-active');
-    // } else if (honor === 'magna') {
-    //   honorMagna.classList.add('is-active');
-    // } else if (honor === 'cum') {
-    //   honorCum.classList.add('is-active');
-    // }
+    if (honor === 'summa') {
+      honorSumma.classList.add('is-active');
+    } else if (honor === 'magna') {
+      honorMagna.classList.add('is-active');
+    } else if (honor === 'cum') {
+      honorCum.classList.add('is-active');
+    }
   }
 
   function saveSemesters() {
