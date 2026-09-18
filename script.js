@@ -202,9 +202,6 @@
   function clearAll() {
     if (subjects.length === 0) return;
 
-    var confirmed = confirm('Clear all subjects? This cannot be undone.');
-    if (!confirmed) return;
-
     subjects = [];
     saveToStorage();
     renderAll();
@@ -291,20 +288,8 @@
   }
 
   function updateHonors() {
-    var honor = determineHonors();
-
-    // Clear all
-    honorSumma.classList.remove('is-active');
-    honorMagna.classList.remove('is-active');
-    honorCum.classList.remove('is-active');
-
-    if (honor === 'summa') {
-      honorSumma.classList.add('is-active');
-    } else if (honor === 'magna') {
-      honorMagna.classList.add('is-active');
-    } else if (honor === 'cum') {
-      honorCum.classList.add('is-active');
-    }
+    // The Honor cards row logic has been moved to updateCGPA
+    // so it reacts to the overall CGPA (Add Semester) instead of just the current subjects.
   }
 
   function getHonorLabel(honor) {
@@ -529,9 +514,6 @@
   function clearSemesters() {
     if (semesters.length === 0) return;
     
-    var confirmed = confirm('Clear all past semesters? This cannot be undone.');
-    if (!confirmed) return;
-    
     semesters = [];
     saveSemesters();
     renderSemesters();
@@ -748,6 +730,19 @@
 
       cgpaMeta.textContent = totalSemCount + ' semester' + (totalSemCount !== 1 ? 's' : '') +
         ' \u00B7 ' + totalUnitsAll + ' total units';
+    }
+
+    // Update the Honor cards row based on the CGPA
+    honorSumma.classList.remove('is-active');
+    honorMagna.classList.remove('is-active');
+    honorCum.classList.remove('is-active');
+
+    if (honor === 'summa') {
+      honorSumma.classList.add('is-active');
+    } else if (honor === 'magna') {
+      honorMagna.classList.add('is-active');
+    } else if (honor === 'cum') {
+      honorCum.classList.add('is-active');
     }
   }
 
