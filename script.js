@@ -193,10 +193,6 @@
     renderBannerMeta();
     updateHonors();
 
-    // Also update CGPA
-    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
-      updateCGPA();
-    }
   }
 
   function clearAll() {
@@ -309,11 +305,6 @@
     renderStats();
     renderBannerMeta();
     updateHonors();
-
-    // Also update CGPA if semesters module is initialized
-    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
-      updateCGPA();
-    }
 
     var isEmpty = subjects.length === 0;
     btnClear.disabled = isEmpty;
@@ -651,19 +642,10 @@
     }
   }
 
-  // CGPA = Σ(GPA × Units) / Σ(Units) across all semesters + current semester
+  // CGPA = Σ(GPA × Units) / Σ(Units) across all semesters
   function calculateCGPA() {
     var totalWeighted = 0;
     var totalUnits = 0;
-
-    // Include current semester (from subjects) if there are subjects
-    var currentGWA = calculateGWA();
-    var currentUnits = getTotalUnits();
-
-    if (currentGWA !== null && currentUnits > 0) {
-      totalWeighted += currentGWA * currentUnits;
-      totalUnits += currentUnits;
-    }
 
     // Include past semesters
     for (var i = 0; i < semesters.length; i++) {
@@ -692,13 +674,10 @@
 
   function updateCGPA() {
     var cgpa = calculateCGPA();
-    var totalSemCount = semesters.length + (subjects.length > 0 ? 1 : 0);
+    var totalSemCount = semesters.length;
 
     // Collect all individual grades for honor check
     var allGrades = [];
-    for (var i = 0; i < subjects.length; i++) {
-      allGrades.push(subjects[i].grade);
-    }
     // For past semesters, we use their GPA as a proxy
     for (var j = 0; j < semesters.length; j++) {
       allGrades.push(semesters[j].gpa);
@@ -710,7 +689,7 @@
       cgpaDisplay.textContent = '\u2014';
       cgpaDisplay.classList.add('is-empty');
       cgpaHonor.textContent = '';
-      cgpaMeta.textContent = 'Add semesters or subjects to see your Latin Honors standing';
+      cgpaMeta.textContent = 'Add semesters to see your Latin Honors standing';
       cgpaPanel.classList.remove('has-value');
     } else {
       cgpaDisplay.textContent = cgpa.toFixed(4);
@@ -737,13 +716,13 @@
     honorMagna.classList.remove('is-active');
     honorCum.classList.remove('is-active');
 
-    if (honor === 'summa') {
-      honorSumma.classList.add('is-active');
-    } else if (honor === 'magna') {
-      honorMagna.classList.add('is-active');
-    } else if (honor === 'cum') {
-      honorCum.classList.add('is-active');
-    }
+    // if (honor === 'summa') {
+    //   honorSumma.classList.add('is-active');
+    // } else if (honor === 'magna') {
+    //   honorMagna.classList.add('is-active');
+    // } else if (honor === 'cum') {
+    //   honorCum.classList.add('is-active');
+    // }
   }
 
   function saveSemesters() {
