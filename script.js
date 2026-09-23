@@ -25,7 +25,7 @@
   var tableBody      = document.getElementById('table-body');
   var emptyState     = document.getElementById('empty-state');
   var gwaDisplay     = document.getElementById('gwa-display');
-  var gwaStatus      = document.getElementById('gwa-status');
+
   var totalUnitsEl   = document.getElementById('total-units');
   var subjectCountEl = document.getElementById('subject-count');
   var btnAdd         = document.getElementById('btn-add');
@@ -252,30 +252,7 @@
   //  Academic Honors Detection
   // ============================================================
 
-  function determineHonors() {
-    if (subjects.length === 0) return null;
 
-    var gwa = calculateGWA();
-    if (gwa === null) return null;
-
-    var highestGrade = getHighestGrade();
-    var maxGrade = highestGrade ? highestGrade.grade : 5;
-
-    // Summa Cum Laude: GWA 1.00–1.25, no grade lower than 1.75
-    if (gwa >= 1.00 && gwa <= 1.25 && maxGrade <= 1.75) {
-      return 'summa';
-    }
-    // Magna Cum Laude: GWA 1.26–1.50, no grade lower than 2.00
-    if (gwa >= 1.00 && gwa <= 1.50 && maxGrade <= 2.00) {
-      return 'magna';
-    }
-    // Cum Laude: GWA 1.51–1.75, no grade lower than 2.25
-    if (gwa >= 1.00 && gwa <= 1.75 && maxGrade <= 2.25) {
-      return 'cum';
-    }
-
-    return null;
-  }
 
   function getHonorLabel(honor) {
     if (honor === 'summa') return 'Summa Cum Laude';
@@ -385,7 +362,7 @@
       gwaDisplay.textContent = '\u2014';
       gwaDisplay.classList.add('is-empty');
       gwaDisplay.classList.remove('just-calculated');
-      gwaStatus.textContent = 'Add subjects below';
+
     } else {
       var previousValue = gwaDisplay.textContent;
       var newValue = gwa.toFixed(4);
@@ -404,14 +381,6 @@
         gwaDisplay.classList.add('just-calculated');
       }
 
-      // Status text with honor
-      var honor = determineHonors();
-      var honorLabel = getHonorLabel(honor);
-      if (honorLabel) {
-        gwaStatus.textContent = honorLabel + ' \u2014 With Honors';
-      } else {
-        gwaStatus.textContent = 'Calculated';
-      }
     }
   }
 

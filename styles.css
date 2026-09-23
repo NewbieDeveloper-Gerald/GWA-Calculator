@@ -208,12 +208,7 @@ main {
   transition: opacity var(--duration-base) var(--ease-out);
 }
 .gwa-banner-value.is-empty { color: var(--dark-muted); opacity: 0.5; }
-.gwa-banner-status {
-  font-size: var(--fs-xs);
-  color: var(--accent-300);
-  margin-top: var(--space-1);
-  font-weight: 500;
-}
+
 .gwa-banner-right { align-items: flex-end; text-align: right; }
 .gwa-banner-units {
   font-size: var(--fs-xl);
