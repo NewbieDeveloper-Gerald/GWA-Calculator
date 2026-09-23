@@ -187,16 +187,10 @@
     input.classList.remove('input-invalid');
     saveToStorage();
 
-    // Re-render stats, banner, honors (but not the table to keep focus)
+    // Re-render stats, banner (but not the table to keep focus)
     updateGWADisplay();
     renderStats();
     renderBannerMeta();
-    updateHonors();
-
-    // Also update CGPA
-    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
-      updateCGPA();
-    }
   }
 
   function clearAll() {
@@ -254,10 +248,6 @@
     return best;
   }
 
-  function getWorstGrade() {
-    return getHighestGrade();
-  }
-
   // ============================================================
   //  Academic Honors Detection
   // ============================================================
@@ -287,11 +277,6 @@
     return null;
   }
 
-  function updateHonors() {
-    // The Honor cards row logic has been moved to updateCGPA
-    // so it reacts to the overall CGPA (Add Semester) instead of just the current subjects.
-  }
-
   function getHonorLabel(honor) {
     if (honor === 'summa') return 'Summa Cum Laude';
     if (honor === 'magna') return 'Magna Cum Laude';
@@ -308,12 +293,6 @@
     updateGWADisplay();
     renderStats();
     renderBannerMeta();
-    updateHonors();
-
-    // Also update CGPA if semesters module is initialized
-    if (typeof updateCGPA === 'function' && document.getElementById('cgpa-display')) {
-      updateCGPA();
-    }
 
     var isEmpty = subjects.length === 0;
     btnClear.disabled = isEmpty;
@@ -438,7 +417,7 @@
 
   function renderStats() {
     var best = getBestGrade();
-    var worst = getWorstGrade();
+    var worst = getHighestGrade();
 
     if (best) {
       statBest.textContent = best.grade.toFixed(2);
@@ -705,7 +684,7 @@
       cgpaDisplay.classList.remove('is-empty');
       cgpaPanel.classList.add('has-value');
 
-      var totalUnitsAll = getTotalUnits();
+      var totalUnitsAll = 0;
       for (var k = 0; k < semesters.length; k++) {
         totalUnitsAll += semesters[k].units;
       }
